@@ -160,6 +160,13 @@ pub fn timeline_ui_system(
             // ── Main timeline area ───────────────────────────────
             let avail = ui.available_rect_before_wrap();
 
+            // Claim the full available space so the panel remains resizable.
+            ui.allocate_rect(avail, egui::Sense::hover());
+
+            // Fill the entire timeline area with background
+            let bg_painter = ui.painter_at(avail);
+            bg_painter.rect_filled(avail, 0.0, theme::PANEL_BG);
+
             let layer_rect = egui::Rect::from_min_max(
                 avail.min,
                 egui::pos2(avail.min.x + LAYER_COL_WIDTH, avail.max.y),
@@ -311,7 +318,7 @@ pub fn timeline_ui_system(
                 ));
             }
 
-            // Playhead drag
+            // Playhead drag on ruler
             let ruler_resp = ui.interact(
                 ruler_rect,
                 ui.id().with("ruler_drag"),
@@ -319,14 +326,40 @@ pub fn timeline_ui_system(
             );
             if ruler_resp.dragged() || ruler_resp.clicked() {
                 if let Some(pos) = ruler_resp.interact_pointer_pos() {
-                    let _new_ms = state
+                    let new_ms = state
                         .x_to_ms(pos.x - timeline_rect.min.x)
                         .clamp(0.0, total_time);
+                    project.playhead_frame = new_ms as u32;
+                    if let Some(ref mut pb) = playback {
+                        pb.current_time_ms = new_ms;
+                    }
                     state.dragging_playhead = true;
                 }
             }
             if ruler_resp.drag_stopped() {
                 state.dragging_playhead = false;
+            }
+
+            // Click on timeline track area also seeks
+            let track_area = egui::Rect::from_min_max(
+                egui::pos2(timeline_rect.min.x, tracks_top),
+                timeline_rect.max,
+            );
+            let track_resp = ui.interact(
+                track_area,
+                ui.id().with("track_area_click"),
+                egui::Sense::click(),
+            );
+            if track_resp.clicked() {
+                if let Some(pos) = track_resp.interact_pointer_pos() {
+                    let new_ms = state
+                        .x_to_ms(pos.x - timeline_rect.min.x)
+                        .clamp(0.0, total_time);
+                    project.playhead_frame = new_ms as u32;
+                    if let Some(ref mut pb) = playback {
+                        pb.current_time_ms = new_ms;
+                    }
+                }
             }
 
             // Mouse wheel scroll/zoom

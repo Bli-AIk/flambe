@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use bevy_alight_motion::prelude::*;
 use bevy_inspector_egui::bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
-use flambe::io::file_loader::{handle_open_file, sync_project_loaded, TempAssets};
+use flambe::io::file_loader::{TempAssets, handle_open_file, sync_project_loaded};
 use flambe::sync::sync_playback_to_editor;
 use flambe::ui::fonts::configure_egui_fonts;
 use flambe::ui::layer_panel::layer_panel_system;
