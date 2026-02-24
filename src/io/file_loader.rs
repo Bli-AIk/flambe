@@ -34,8 +34,10 @@ pub fn handle_open_file(
             .to_string_lossy()
             .to_string();
 
-        // Copy file into assets/flambe_projects/ so Bevy can load it
-        let dest_dir = PathBuf::from("assets/flambe_projects");
+        // Copy file into the crate's assets/flambe_projects/ so Bevy can load it.
+        // In dev builds Bevy resolves assets relative to CARGO_MANIFEST_DIR.
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let dest_dir = PathBuf::from(manifest_dir).join("assets/flambe_projects");
         if let Err(e) = std::fs::create_dir_all(&dest_dir) {
             error!("Failed to create assets dir: {e}");
             continue;

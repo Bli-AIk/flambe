@@ -41,7 +41,11 @@ fn main() {
         )
         .add_systems(
             Update,
-            (handle_open_file, sync_project_loaded, sync_playback_to_editor),
+            (
+                handle_open_file,
+                sync_project_loaded,
+                sync_playback_to_editor,
+            ),
         )
         .run();
 }

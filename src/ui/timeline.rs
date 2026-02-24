@@ -151,11 +151,10 @@ pub fn timeline_ui_system(
             );
 
             // Thin separator below transport
-            let sep_rect = egui::Rect::from_min_size(
-                ui.cursor().min,
-                egui::vec2(ui.available_width(), 1.0),
-            );
-            ui.painter().rect_filled(sep_rect, 0.0, theme::SEPARATOR_COLOR);
+            let sep_rect =
+                egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
+            ui.painter()
+                .rect_filled(sep_rect, 0.0, theme::SEPARATOR_COLOR);
             ui.advance_cursor_after_rect(sep_rect);
 
             // ── Main timeline area ───────────────────────────────
@@ -255,10 +254,7 @@ pub fn timeline_ui_system(
                 if bar_x1 > timeline_rect.min.x && bar_x0 < timeline_rect.max.x {
                     let bar = egui::Rect::from_min_max(
                         egui::pos2(bar_x0.max(timeline_rect.min.x), y + 5.0),
-                        egui::pos2(
-                            bar_x1.min(timeline_rect.max.x),
-                            y + TRACK_HEIGHT - 5.0,
-                        ),
+                        egui::pos2(bar_x1.min(timeline_rect.max.x), y + TRACK_HEIGHT - 5.0),
                     );
                     let bar_color = if is_selected {
                         theme::BAR_SELECTED_COLOR
@@ -269,8 +265,7 @@ pub fn timeline_ui_system(
 
                     // Keyframe dots (small circles like rerun)
                     for &kf_t in &track.keyframe_times {
-                        let kf_ms =
-                            track.start_ms + kf_t * (track.end_ms - track.start_ms);
+                        let kf_ms = track.start_ms + kf_t * (track.end_ms - track.start_ms);
                         let kx = timeline_rect.min.x + state.ms_to_x(kf_ms);
                         if kx >= timeline_rect.min.x && kx <= timeline_rect.max.x {
                             let cy = y + TRACK_HEIGHT / 2.0;
@@ -300,10 +295,7 @@ pub fn timeline_ui_system(
             let ph_x = timeline_rect.min.x + state.ms_to_x(playhead_ms);
             if ph_x >= timeline_rect.min.x && ph_x <= timeline_rect.max.x {
                 painter.line_segment(
-                    [
-                        egui::pos2(ph_x, avail.min.y),
-                        egui::pos2(ph_x, avail.max.y),
-                    ],
+                    [egui::pos2(ph_x, avail.min.y), egui::pos2(ph_x, avail.max.y)],
                     egui::Stroke::new(1.5, theme::PLAYHEAD_COLOR),
                 );
                 // Small triangle marker at ruler
@@ -340,8 +332,7 @@ pub fn timeline_ui_system(
             // Mouse wheel scroll/zoom
             let scroll = ui.input(|i| i.raw_scroll_delta);
             if scroll.x != 0.0 {
-                state.scroll_ms =
-                    (state.scroll_ms - scroll.x / state.px_per_ms).max(0.0);
+                state.scroll_ms = (state.scroll_ms - scroll.x / state.px_per_ms).max(0.0);
             }
             if scroll.y != 0.0 && ui.input(|i| i.modifiers.ctrl) {
                 let factor = if scroll.y > 0.0 { 1.1 } else { 0.9 };

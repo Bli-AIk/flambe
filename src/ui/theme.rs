@@ -124,8 +124,7 @@ pub fn apply_theme(ctx: &egui::Context) {
     style.visuals.selection.stroke.color = blue::S900;
 
     // Separator / non-interactive stroke
-    style.visuals.widgets.noninteractive.bg_stroke =
-        Stroke::new(1.0, gray::S250);
+    style.visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0, gray::S250);
 
     // ── Text colors (CRITICAL: set ALL widget states to avoid purple fallback) ──
     let subdued = gray::S550;

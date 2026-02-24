@@ -17,18 +17,18 @@ pub fn playback_controls_system(
         .exact_height(32.0)
         .show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
-                let (playing, looping, current_ms, total_ms, speed) =
-                    if let Some(ref pb) = playback {
-                        (
-                            pb.playing,
-                            pb.looping,
-                            pb.current_time_ms,
-                            pb.total_time_ms,
-                            pb.speed,
-                        )
-                    } else {
-                        (false, false, 0.0, 1000.0, 1.0)
-                    };
+                let (playing, looping, current_ms, total_ms, speed) = if let Some(ref pb) = playback
+                {
+                    (
+                        pb.playing,
+                        pb.looping,
+                        pb.current_time_ms,
+                        pb.total_time_ms,
+                        pb.speed,
+                    )
+                } else {
+                    (false, false, 0.0, 1000.0, 1.0)
+                };
 
                 // Reset button
                 if ui.button("⏮").clicked() {
