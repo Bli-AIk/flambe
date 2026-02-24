@@ -1,0 +1,7 @@
+/target/
+/assets/flambe_projects/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
