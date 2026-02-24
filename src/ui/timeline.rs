@@ -1,30 +1,27 @@
 //! Unified layer+timeline panel — AE-style layout with layer list and timeline tracks.
 //!
 //! Left: layer names (selectable), Right: timeline tracks with keyframes and playhead.
+//! Transport controls integrated into the header bar (like Rerun).
 
 use bevy::prelude::*;
+use bevy_alight_motion::prelude::AmPlayback;
 use bevy_inspector_egui::bevy_egui::EguiContexts;
 
 use crate::editor::EditorProject;
 use crate::ui::theme;
 
-/// Height of one track row in pixels.
 const TRACK_HEIGHT: f32 = 24.0;
-/// Width of the layer name column in pixels.
 const LAYER_COL_WIDTH: f32 = 180.0;
-/// Height of the ruler/header bar in pixels.
 const RULER_HEIGHT: f32 = 22.0;
-/// Keyframe diamond half-size in pixels.
-const KF_SIZE: f32 = 5.0;
+const KF_SIZE: f32 = 4.0;
+/// Height of the transport controls bar above the timeline.
+const TRANSPORT_HEIGHT: f32 = 28.0;
 
 /// Timeline view state (zoom, scroll, etc.).
 #[derive(Resource)]
 pub struct TimelineState {
-    /// Pixels per millisecond (zoom level).
     pub px_per_ms: f32,
-    /// Horizontal scroll offset in milliseconds.
     pub scroll_ms: f32,
-    /// Whether the playhead is being dragged.
     pub dragging_playhead: bool,
 }
 
@@ -48,7 +45,6 @@ impl TimelineState {
     }
 }
 
-/// Collected info for one track.
 struct TrackInfo {
     label: String,
     icon: &'static str,
@@ -57,22 +53,23 @@ struct TrackInfo {
     keyframe_times: Vec<f32>,
 }
 
-/// System that draws the unified layer+timeline panel.
+/// System that draws the unified timeline panel with integrated transport.
 pub fn timeline_ui_system(
     mut contexts: EguiContexts,
     mut project: Option<ResMut<EditorProject>>,
     mut state: ResMut<TimelineState>,
+    mut playback: Option<ResMut<AmPlayback>>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
     egui::TopBottomPanel::bottom("timeline_panel")
         .resizable(true)
-        .min_height(100.0)
-        .default_height(240.0)
+        .min_height(120.0)
+        .default_height(280.0)
         .show(ctx, |ui| {
             let Some(ref mut project) = project else {
                 ui.centered_and_justified(|ui| {
-                    ui.label("No project loaded — use File > Open...");
+                    ui.colored_label(theme::TEXT_SUBDUED, "No project loaded — File > Open...");
                 });
                 return;
             };
@@ -81,22 +78,87 @@ pub fn timeline_ui_system(
             let total_time = project.scene.total_time as f32;
             let playhead_ms = project.playhead_frame as f32;
 
-            // Zoom controls bar
-            ui.horizontal(|ui| {
-                if ui.button("−").clicked() {
-                    state.px_per_ms = (state.px_per_ms * 0.8).max(0.01);
-                }
-                ui.label(format!("{:.0}%", state.px_per_ms * 1000.0));
-                if ui.button("+").clicked() {
-                    state.px_per_ms = (state.px_per_ms * 1.25).min(5.0);
-                }
-                ui.separator();
-                let secs = playhead_ms / 1000.0;
-                let total_secs = total_time / 1000.0;
-                ui.label(format!("{secs:.2}s / {total_secs:.2}s"));
-            });
+            // ── Transport bar ────────────────────────────────────
+            ui.allocate_ui_with_layout(
+                egui::vec2(ui.available_width(), TRANSPORT_HEIGHT),
+                egui::Layout::left_to_right(egui::Align::Center),
+                |ui| {
+                    ui.spacing_mut().item_spacing.x = 4.0;
 
-            // Main area: layer list on left, timeline on right
+                    let (playing, looping, speed) = if let Some(ref pb) = playback {
+                        (pb.playing, pb.looping, pb.speed)
+                    } else {
+                        (false, false, 1.0)
+                    };
+
+                    // Transport buttons
+                    if ui.small_button("⏮").clicked() {
+                        if let Some(ref mut pb) = playback {
+                            pb.reset();
+                        }
+                        project.playhead_frame = 0;
+                    }
+                    let play_label = if playing { "⏸" } else { "▶" };
+                    if ui.small_button(play_label).clicked() {
+                        if let Some(ref mut pb) = playback {
+                            pb.toggle();
+                        }
+                    }
+                    let loop_label = if looping { "🔁" } else { "🔂" };
+                    if ui.small_button(loop_label).clicked() {
+                        if let Some(ref mut pb) = playback {
+                            pb.looping = !pb.looping;
+                        }
+                    }
+
+                    ui.separator();
+
+                    // Time display
+                    ui.colored_label(
+                        theme::TEXT_DEFAULT,
+                        format!("{:.2}s / {:.2}s", playhead_ms / 1000.0, total_time / 1000.0),
+                    );
+
+                    ui.separator();
+
+                    // Speed
+                    ui.colored_label(theme::TEXT_SUBDUED, "Speed:");
+                    let mut new_speed = speed;
+                    ui.add(
+                        egui::DragValue::new(&mut new_speed)
+                            .range(0.1..=4.0)
+                            .speed(0.05)
+                            .suffix("×"),
+                    );
+                    if let Some(ref mut pb) = playback {
+                        pb.speed = new_speed;
+                    }
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        // Zoom controls on the right
+                        if ui.small_button("+").clicked() {
+                            state.px_per_ms = (state.px_per_ms * 1.25).min(5.0);
+                        }
+                        ui.colored_label(
+                            theme::TEXT_SUBDUED,
+                            format!("{:.0}%", state.px_per_ms * 1000.0),
+                        );
+                        if ui.small_button("−").clicked() {
+                            state.px_per_ms = (state.px_per_ms * 0.8).max(0.01);
+                        }
+                    });
+                },
+            );
+
+            // Thin separator below transport
+            let sep_rect = egui::Rect::from_min_size(
+                ui.cursor().min,
+                egui::vec2(ui.available_width(), 1.0),
+            );
+            ui.painter().rect_filled(sep_rect, 0.0, theme::SEPARATOR_COLOR);
+            ui.advance_cursor_after_rect(sep_rect);
+
+            // ── Main timeline area ───────────────────────────────
             let avail = ui.available_rect_before_wrap();
 
             let layer_rect = egui::Rect::from_min_max(
@@ -119,17 +181,17 @@ pub fn timeline_ui_system(
                 egui::Stroke::new(1.0, theme::SEPARATOR_COLOR),
             );
 
-            // Header row (layer column)
+            // Header: layer column
             let header_rect = egui::Rect::from_min_size(
                 layer_rect.min,
                 egui::vec2(LAYER_COL_WIDTH, RULER_HEIGHT),
             );
             painter.rect_filled(header_rect, 0.0, theme::HEADER_BG);
             painter.text(
-                egui::pos2(header_rect.min.x + 6.0, header_rect.min.y + 3.0),
+                egui::pos2(header_rect.min.x + 8.0, header_rect.min.y + 4.0),
                 egui::Align2::LEFT_TOP,
                 "Layers",
-                egui::FontId::proportional(12.0),
+                egui::FontId::proportional(11.0),
                 theme::HEADER_TEXT_COLOR,
             );
 
@@ -166,12 +228,18 @@ pub fn timeline_ui_system(
                     egui::vec2(LAYER_COL_WIDTH, TRACK_HEIGHT),
                 );
                 painter.rect_filled(name_rect, 0.0, bg);
+
+                let text_color = if is_selected {
+                    theme::TEXT_STRONG
+                } else {
+                    theme::LAYER_TEXT_COLOR
+                };
                 painter.text(
-                    egui::pos2(layer_rect.min.x + 6.0, y + 4.0),
+                    egui::pos2(layer_rect.min.x + 8.0, y + 5.0),
                     egui::Align2::LEFT_TOP,
                     format!("{} {}", track.icon, track.label),
-                    egui::FontId::proportional(12.0),
-                    theme::LAYER_TEXT_COLOR,
+                    egui::FontId::proportional(11.0),
+                    text_color,
                 );
 
                 // Timeline track cell
@@ -186,10 +254,10 @@ pub fn timeline_ui_system(
                 let bar_x1 = timeline_rect.min.x + state.ms_to_x(track.end_ms);
                 if bar_x1 > timeline_rect.min.x && bar_x0 < timeline_rect.max.x {
                     let bar = egui::Rect::from_min_max(
-                        egui::pos2(bar_x0.max(timeline_rect.min.x), y + 4.0),
+                        egui::pos2(bar_x0.max(timeline_rect.min.x), y + 5.0),
                         egui::pos2(
                             bar_x1.min(timeline_rect.max.x),
-                            y + TRACK_HEIGHT - 4.0,
+                            y + TRACK_HEIGHT - 5.0,
                         ),
                     );
                     let bar_color = if is_selected {
@@ -199,24 +267,18 @@ pub fn timeline_ui_system(
                     };
                     painter.rect_filled(bar, 3.0, bar_color);
 
-                    // Keyframe diamonds
+                    // Keyframe dots (small circles like rerun)
                     for &kf_t in &track.keyframe_times {
                         let kf_ms =
                             track.start_ms + kf_t * (track.end_ms - track.start_ms);
                         let kx = timeline_rect.min.x + state.ms_to_x(kf_ms);
                         if kx >= timeline_rect.min.x && kx <= timeline_rect.max.x {
                             let cy = y + TRACK_HEIGHT / 2.0;
-                            let diamond = [
-                                egui::pos2(kx, cy - KF_SIZE),
-                                egui::pos2(kx + KF_SIZE, cy),
-                                egui::pos2(kx, cy + KF_SIZE),
-                                egui::pos2(kx - KF_SIZE, cy),
-                            ];
-                            painter.add(egui::Shape::convex_polygon(
-                                diamond.to_vec(),
+                            painter.circle_filled(
+                                egui::pos2(kx, cy),
+                                KF_SIZE,
                                 theme::KEYFRAME_COLOR,
-                                egui::Stroke::NONE,
-                            ));
+                            );
                         }
                     }
                 }
@@ -242,12 +304,13 @@ pub fn timeline_ui_system(
                         egui::pos2(ph_x, avail.min.y),
                         egui::pos2(ph_x, avail.max.y),
                     ],
-                    egui::Stroke::new(2.0, theme::PLAYHEAD_COLOR),
+                    egui::Stroke::new(1.5, theme::PLAYHEAD_COLOR),
                 );
+                // Small triangle marker at ruler
                 let tri = [
-                    egui::pos2(ph_x - 6.0, ruler_rect.min.y),
-                    egui::pos2(ph_x + 6.0, ruler_rect.min.y),
-                    egui::pos2(ph_x, ruler_rect.max.y),
+                    egui::pos2(ph_x - 5.0, ruler_rect.min.y),
+                    egui::pos2(ph_x + 5.0, ruler_rect.min.y),
+                    egui::pos2(ph_x, ruler_rect.min.y + 8.0),
                 ];
                 painter.add(egui::Shape::convex_polygon(
                     tri.to_vec(),

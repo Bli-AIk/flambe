@@ -9,15 +9,18 @@ pub mod gray {
     use egui::Color32;
     pub const S0: Color32 = Color32::from_rgb(0x00, 0x00, 0x00);
     pub const S100: Color32 = Color32::from_rgb(0x0d, 0x10, 0x11);
+    pub const S125: Color32 = Color32::from_rgb(0x11, 0x14, 0x15);
     pub const S150: Color32 = Color32::from_rgb(0x14, 0x18, 0x19);
     pub const S200: Color32 = Color32::from_rgb(0x1c, 0x21, 0x23);
     pub const S250: Color32 = Color32::from_rgb(0x26, 0x2b, 0x2e);
     pub const S300: Color32 = Color32::from_rgb(0x31, 0x38, 0x3b);
     pub const S325: Color32 = Color32::from_rgb(0x37, 0x3f, 0x42);
     pub const S350: Color32 = Color32::from_rgb(0x3e, 0x46, 0x4a);
+    pub const S500: Color32 = Color32::from_rgb(0x6c, 0x79, 0x7f);
     pub const S550: Color32 = Color32::from_rgb(0x7d, 0x8c, 0x92);
     pub const S700: Color32 = Color32::from_rgb(0xae, 0xc2, 0xca);
     pub const S775: Color32 = Color32::from_rgb(0xca, 0xd8, 0xde);
+    pub const S800: Color32 = Color32::from_rgb(0xd3, 0xde, 0xe3);
     pub const S1000: Color32 = Color32::from_rgb(0xff, 0xff, 0xff);
 }
 
@@ -25,6 +28,7 @@ pub mod blue {
     use egui::Color32;
     pub const S350: Color32 = Color32::from_rgb(0x00, 0x3d, 0xa1);
     pub const S400: Color32 = Color32::from_rgb(0x00, 0x4b, 0xc2);
+    pub const S450: Color32 = Color32::from_rgb(0x00, 0x5a, 0xe6);
     pub const S500: Color32 = Color32::from_rgb(0x2a, 0x6c, 0xff);
     pub const S750: Color32 = Color32::from_rgb(0xc2, 0xcc, 0xff);
     pub const S900: Color32 = Color32::from_rgb(0xf0, 0xf2, 0xff);
@@ -47,6 +51,9 @@ pub fn apply_theme(ctx: &egui::Context) {
     }
     if let Some(font_id) = style.text_styles.get_mut(&egui::TextStyle::Heading) {
         font_id.size = 16.0;
+    }
+    if let Some(font_id) = style.text_styles.get_mut(&egui::TextStyle::Small) {
+        font_id.size = 10.0;
     }
     style.spacing.interact_size.y = 15.0;
 
@@ -117,17 +124,21 @@ pub fn apply_theme(ctx: &egui::Context) {
     style.visuals.selection.stroke.color = blue::S900;
 
     // Separator / non-interactive stroke
-    style.visuals.widgets.noninteractive.bg_stroke.color = gray::S250;
+    style.visuals.widgets.noninteractive.bg_stroke =
+        Stroke::new(1.0, gray::S250);
 
-    // Text colors
+    // ── Text colors (CRITICAL: set ALL widget states to avoid purple fallback) ──
     let subdued = gray::S550;
     let default_text = gray::S775;
     let strong = gray::S1000;
-    style.visuals.widgets.noninteractive.fg_stroke.color = subdued;
-    style.visuals.widgets.inactive.fg_stroke.color = default_text;
-    style.visuals.widgets.active.fg_stroke.color = strong;
-    style.visuals.widgets.active.fg_stroke.width = 2.0;
-    style.visuals.selection.stroke.width = 2.0;
+
+    style.visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0, subdued);
+    style.visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, default_text);
+    style.visuals.widgets.hovered.fg_stroke = Stroke::new(1.5, strong);
+    style.visuals.widgets.active.fg_stroke = Stroke::new(2.0, strong);
+    style.visuals.widgets.open.fg_stroke = Stroke::new(1.0, default_text);
+
+    style.visuals.selection.stroke = Stroke::new(2.0, blue::S900);
 
     // Shadow
     let shadow = Shadow {
@@ -151,29 +162,20 @@ pub fn apply_theme(ctx: &egui::Context) {
 }
 
 // ── Color constants for UI panels ───────────────────────────────
-/// Header/ruler background
-pub const HEADER_BG: Color32 = gray::S200;
-/// Track row even background
+pub const PANEL_BG: Color32 = gray::S100;
+pub const HEADER_BG: Color32 = gray::S150;
 pub const ROW_EVEN_BG: Color32 = gray::S100;
-/// Track row odd background
-pub const ROW_ODD_BG: Color32 = gray::S150;
-/// Selected row background
-pub const ROW_SELECTED_BG: Color32 = Color32::from_rgb(0x00, 0x30, 0x84);
-/// Track bar color (unselected)
-pub const BAR_COLOR: Color32 = blue::S500;
-/// Track bar color (selected)
-pub const BAR_SELECTED_COLOR: Color32 = blue::S750;
-/// Separator line color
+pub const ROW_ODD_BG: Color32 = gray::S125;
+pub const ROW_SELECTED_BG: Color32 = Color32::from_rgb(0x00, 0x25, 0x69);
+pub const BAR_COLOR: Color32 = blue::S400;
+pub const BAR_SELECTED_COLOR: Color32 = blue::S450;
 pub const SEPARATOR_COLOR: Color32 = gray::S250;
-/// Ruler tick color
-pub const RULER_TICK_COLOR: Color32 = gray::S350;
-/// Ruler text color
-pub const RULER_TEXT_COLOR: Color32 = gray::S550;
-/// Layer name text
+pub const RULER_TICK_COLOR: Color32 = gray::S300;
+pub const RULER_TEXT_COLOR: Color32 = gray::S500;
 pub const LAYER_TEXT_COLOR: Color32 = gray::S700;
-/// Header label text
 pub const HEADER_TEXT_COLOR: Color32 = gray::S550;
-/// Keyframe diamond color
-pub const KEYFRAME_COLOR: Color32 = Color32::from_rgb(0xFF, 0xC8, 0x32);
-/// Playhead line color
+pub const KEYFRAME_COLOR: Color32 = gray::S775;
 pub const PLAYHEAD_COLOR: Color32 = Color32::from_rgb(0xFF, 0x50, 0x50);
+pub const TEXT_SUBDUED: Color32 = gray::S550;
+pub const TEXT_DEFAULT: Color32 = gray::S775;
+pub const TEXT_STRONG: Color32 = gray::S1000;

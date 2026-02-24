@@ -8,7 +8,6 @@ use flambe::sync::sync_playback_to_editor;
 use flambe::ui::fonts::configure_egui_fonts;
 use flambe::ui::layer_panel::layer_panel_system;
 use flambe::ui::menu_bar::{OpenFileRequest, SaveFileRequest, menu_bar_system};
-use flambe::ui::playback::playback_controls_system;
 use flambe::ui::property_panel::property_panel_system;
 use flambe::ui::timeline::{TimelineState, timeline_ui_system};
 
@@ -37,7 +36,6 @@ fn main() {
                 menu_bar_system,
                 layer_panel_system,
                 property_panel_system,
-                playback_controls_system,
                 timeline_ui_system,
             ),
         )
