@@ -2,6 +2,7 @@
 //!
 //! Copies .amproj files into the Bevy assets directory, then loads them
 //! through the standard AlightMotionPlugin pipeline for full rendering.
+//! Temporary copies are tracked and cleaned up when the editor exits.
 
 use bevy::prelude::*;
 use bevy_alight_motion::loader::AmProject;
@@ -13,6 +14,31 @@ use std::path::PathBuf;
 use crate::editor::EditorProject;
 use crate::ui::menu_bar::OpenFileRequest;
 
+/// Tracks temporary asset files copied into the assets directory.
+/// Files are deleted when this resource is dropped (normal app exit).
+#[derive(Resource, Default)]
+pub struct TempAssets {
+    pub paths: Vec<PathBuf>,
+}
+
+impl Drop for TempAssets {
+    fn drop(&mut self) {
+        for path in &self.paths {
+            if path.exists() {
+                if let Err(e) = std::fs::remove_file(path) {
+                    eprintln!("Failed to remove temp asset {:?}: {e}", path);
+                } else {
+                    eprintln!("Cleaned up temp asset {:?}", path);
+                }
+            }
+        }
+        // Try to remove the flambe_projects directory if empty.
+        if let Some(parent) = self.paths.first().and_then(|p| p.parent()) {
+            let _ = std::fs::remove_dir(parent);
+        }
+    }
+}
+
 /// System that handles file open requests:
 /// copies the .amproj into assets/, loads it via the asset pipeline.
 pub fn handle_open_file(
@@ -20,6 +46,7 @@ pub fn handle_open_file(
     asset_server: Res<AssetServer>,
     mut events: MessageReader<OpenFileRequest>,
     project_roots: Query<Entity, With<AmProjectRoot>>,
+    mut temp_assets: ResMut<TempAssets>,
 ) {
     for event in events.read() {
         // Despawn any existing AM project entities
@@ -48,6 +75,7 @@ pub fn handle_open_file(
             continue;
         }
         info!("Copied project to {:?}", dest);
+        temp_assets.paths.push(dest);
 
         // Load via asset pipeline (AlightMotionPlugin handles spawning)
         let asset_path = format!("flambe_projects/{}", filename);

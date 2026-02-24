@@ -21,6 +21,7 @@ pub fn menu_bar_system(
     project: Option<Res<EditorProject>>,
     mut open_events: MessageWriter<OpenFileRequest>,
     mut save_events: MessageWriter<SaveFileRequest>,
+    mut app_exit: MessageWriter<AppExit>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
@@ -49,7 +50,7 @@ pub fn menu_bar_system(
                 ui.separator();
 
                 if ui.button("Quit").clicked() {
-                    std::process::exit(0);
+                    app_exit.write(AppExit::Success);
                 }
             });
 
