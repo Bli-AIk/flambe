@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::bevy_egui::EguiContexts;
 
 use crate::editor::EditorProject;
+use crate::ui::theme;
 
 /// Height of one track row in pixels.
 const TRACK_HEIGHT: f32 = 24.0;
@@ -115,7 +116,7 @@ pub fn timeline_ui_system(
                     egui::pos2(layer_rect.max.x, avail.min.y),
                     egui::pos2(layer_rect.max.x, avail.max.y),
                 ],
-                egui::Stroke::new(1.0, egui::Color32::from_gray(60)),
+                egui::Stroke::new(1.0, theme::SEPARATOR_COLOR),
             );
 
             // Header row (layer column)
@@ -123,13 +124,13 @@ pub fn timeline_ui_system(
                 layer_rect.min,
                 egui::vec2(LAYER_COL_WIDTH, RULER_HEIGHT),
             );
-            painter.rect_filled(header_rect, 0.0, egui::Color32::from_gray(45));
+            painter.rect_filled(header_rect, 0.0, theme::HEADER_BG);
             painter.text(
                 egui::pos2(header_rect.min.x + 6.0, header_rect.min.y + 3.0),
                 egui::Align2::LEFT_TOP,
                 "Layers",
                 egui::FontId::proportional(12.0),
-                egui::Color32::from_gray(180),
+                theme::HEADER_TEXT_COLOR,
             );
 
             // Ruler (timeline column)
@@ -137,7 +138,7 @@ pub fn timeline_ui_system(
                 timeline_rect.min,
                 egui::vec2(timeline_rect.width(), RULER_HEIGHT),
             );
-            painter.rect_filled(ruler_rect, 0.0, egui::Color32::from_gray(40));
+            painter.rect_filled(ruler_rect, 0.0, theme::HEADER_BG);
             draw_ruler(&painter, &state, ruler_rect, total_time);
 
             // Track rows
@@ -152,11 +153,11 @@ pub fn timeline_ui_system(
 
                 let is_selected = project.selected_layer == Some(i);
                 let bg = if is_selected {
-                    egui::Color32::from_rgb(40, 60, 90)
+                    theme::ROW_SELECTED_BG
                 } else if i % 2 == 0 {
-                    egui::Color32::from_gray(28)
+                    theme::ROW_EVEN_BG
                 } else {
-                    egui::Color32::from_gray(33)
+                    theme::ROW_ODD_BG
                 };
 
                 // Layer name cell
@@ -170,7 +171,7 @@ pub fn timeline_ui_system(
                     egui::Align2::LEFT_TOP,
                     format!("{} {}", track.icon, track.label),
                     egui::FontId::proportional(12.0),
-                    egui::Color32::from_gray(200),
+                    theme::LAYER_TEXT_COLOR,
                 );
 
                 // Timeline track cell
@@ -192,9 +193,9 @@ pub fn timeline_ui_system(
                         ),
                     );
                     let bar_color = if is_selected {
-                        egui::Color32::from_rgb(80, 150, 240)
+                        theme::BAR_SELECTED_COLOR
                     } else {
-                        egui::Color32::from_rgb(55, 110, 190)
+                        theme::BAR_COLOR
                     };
                     painter.rect_filled(bar, 3.0, bar_color);
 
@@ -213,7 +214,7 @@ pub fn timeline_ui_system(
                             ];
                             painter.add(egui::Shape::convex_polygon(
                                 diamond.to_vec(),
-                                egui::Color32::from_rgb(255, 200, 50),
+                                theme::KEYFRAME_COLOR,
                                 egui::Stroke::NONE,
                             ));
                         }
@@ -241,7 +242,7 @@ pub fn timeline_ui_system(
                         egui::pos2(ph_x, avail.min.y),
                         egui::pos2(ph_x, avail.max.y),
                     ],
-                    egui::Stroke::new(2.0, egui::Color32::from_rgb(255, 80, 80)),
+                    egui::Stroke::new(2.0, theme::PLAYHEAD_COLOR),
                 );
                 let tri = [
                     egui::pos2(ph_x - 6.0, ruler_rect.min.y),
@@ -250,7 +251,7 @@ pub fn timeline_ui_system(
                 ];
                 painter.add(egui::Shape::convex_polygon(
                     tri.to_vec(),
-                    egui::Color32::from_rgb(255, 80, 80),
+                    theme::PLAYHEAD_COLOR,
                     egui::Stroke::NONE,
                 ));
             }
@@ -356,7 +357,7 @@ fn draw_ruler(
                     egui::pos2(x, ruler_rect.min.y),
                     egui::pos2(x, ruler_rect.max.y),
                 ],
-                egui::Stroke::new(1.0, egui::Color32::from_gray(80)),
+                egui::Stroke::new(1.0, theme::RULER_TICK_COLOR),
             );
             let secs = ms / 1000.0;
             painter.text(
@@ -364,7 +365,7 @@ fn draw_ruler(
                 egui::Align2::LEFT_TOP,
                 format!("{secs:.1}s"),
                 egui::FontId::proportional(10.0),
-                egui::Color32::from_gray(160),
+                theme::RULER_TEXT_COLOR,
             );
         }
         ms += step_ms;
