@@ -26,41 +26,40 @@ pub fn flambe_menu_system(
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
     // Add project info to the top bar area
-    egui::TopBottomPanel::top("flambe_project_info")
-        .show(ctx, |ui| {
-            egui::MenuBar::new().ui(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Open...").clicked() {
-                        ui.close();
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("Alight Motion Project", &["amproj"])
-                            .pick_file()
-                        {
-                            open_events.write(OpenFileRequest { path });
-                        }
-                    }
-
-                    let has_project = project.is_some();
-                    if ui
-                        .add_enabled(has_project, egui::Button::new("Save"))
-                        .clicked()
+    egui::TopBottomPanel::top("flambe_project_info").show(ctx, |ui| {
+        egui::MenuBar::new().ui(ui, |ui| {
+            ui.menu_button("File", |ui| {
+                if ui.button("Open...").clicked() {
+                    ui.close();
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("Alight Motion Project", &["amproj"])
+                        .pick_file()
                     {
-                        ui.close();
-                        save_events.write(SaveFileRequest);
+                        open_events.write(OpenFileRequest { path });
                     }
-                });
+                }
 
-                // Show project info in menu bar
-                if let Some(ref proj) = project {
-                    ui.separator();
-                    let title = &proj.scene.title;
-                    let dirty = if proj.dirty { " •" } else { "" };
-                    ui.label(format!("{title}{dirty}"));
-                    ui.label(format!(
-                        "{}×{} @ {}fps",
-                        proj.scene.width, proj.scene.height, proj.scene.fps
-                    ));
+                let has_project = project.is_some();
+                if ui
+                    .add_enabled(has_project, egui::Button::new("Save"))
+                    .clicked()
+                {
+                    ui.close();
+                    save_events.write(SaveFileRequest);
                 }
             });
+
+            // Show project info in menu bar
+            if let Some(ref proj) = project {
+                ui.separator();
+                let title = &proj.scene.title;
+                let dirty = if proj.dirty { " •" } else { "" };
+                ui.label(format!("{title}{dirty}"));
+                ui.label(format!(
+                    "{}×{} @ {}fps",
+                    proj.scene.width, proj.scene.height, proj.scene.fps
+                ));
+            }
         });
+    });
 }

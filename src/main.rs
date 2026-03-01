@@ -7,7 +7,9 @@ use bevy_workbench::prelude::*;
 use flambe::io::file_loader::{TempAssets, handle_open_file, sync_project_loaded};
 use flambe::sync::sync_playback_to_editor;
 use flambe::ui::menu_bar::{OpenFileRequest, SaveFileRequest, flambe_menu_system};
-use flambe::ui::preview::{setup_preview, update_preview_resolution};
+use flambe::ui::preview::{
+    PreviewPanel, setup_preview, sync_preview_to_panel, update_preview_resolution,
+};
 use flambe::ui::property_panel::PropertyPanel;
 use flambe::ui::timeline::{TimelinePanel, TimelineState};
 
@@ -32,14 +34,24 @@ fn main() {
         .insert_resource(AmProjectResolution::None)
         .init_resource::<TempAssets>()
         .add_plugins(AlightMotionPlugin)
-        .add_plugins(WorkbenchPlugin::default())
+        .add_plugins(WorkbenchPlugin {
+            config: WorkbenchConfig {
+                show_toolbar: false,
+                enable_game_view: false,
+                ..default()
+            },
+            ..default()
+        })
         .init_resource::<TimelineState>()
         .add_message::<OpenFileRequest>()
         .add_message::<SaveFileRequest>()
         .add_systems(Startup, setup_preview)
         .add_systems(
             bevy_egui::EguiPrimaryContextPass,
-            flambe_menu_system.before(bevy_workbench::menu_bar::menu_bar_system),
+            (
+                flambe_menu_system.before(bevy_workbench::menu_bar::menu_bar_system),
+                sync_preview_to_panel,
+            ),
         )
         .add_systems(
             Update,
@@ -50,6 +62,7 @@ fn main() {
                 update_preview_resolution,
             ),
         )
+        .register_panel(PreviewPanel::default())
         .register_panel(TimelinePanel)
         .register_panel(PropertyPanel)
         .run();

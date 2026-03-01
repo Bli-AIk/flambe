@@ -1,4 +1,4 @@
-//! Preview dock — renders AM project to a texture, displayed in an egui CentralPanel.
+//! Preview dock — renders AM project to a texture, displayed as a WorkbenchPanel.
 //!
 //! The render target image matches the project resolution, and the preview panel
 //! shows it with a fixed aspect ratio and configurable zoom (Auto / fixed %).
@@ -6,11 +6,11 @@
 use bevy::camera::RenderTarget;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiTextureHandle};
+use bevy_workbench::dock::WorkbenchPanel;
 use bevy_workbench::theme::gray;
 
 use crate::editor::EditorProject;
 
-const PANEL_BG: egui::Color32 = gray::S100;
 const TEXT_SUBDUED: egui::Color32 = gray::S550;
 
 /// Zoom mode for the preview panel.
@@ -35,7 +35,7 @@ pub struct PreviewState {
     pub zoom: PreviewZoom,
     pub width: u32,
     pub height: u32,
-    egui_registered: bool,
+    pub egui_texture_id: Option<egui::TextureId>,
 }
 
 /// Startup system: create the render target image and cameras.
@@ -71,7 +71,7 @@ pub fn setup_preview(mut commands: Commands, mut images: ResMut<Assets<Image>>) 
         zoom: PreviewZoom::Auto,
         width,
         height,
-        egui_registered: false,
+        egui_texture_id: None,
     });
 }
 
@@ -101,98 +101,136 @@ pub fn update_preview_resolution(
     state.height = h;
 }
 
-/// System: draw the preview panel showing the render-target texture.
-pub fn preview_panel_system(
-    mut contexts: EguiContexts,
+/// System: register the render target as an egui texture and sync to the dock panel.
+pub fn sync_preview_to_panel(
     mut state: ResMut<PreviewState>,
+    mut contexts: EguiContexts,
+    mut tile_state: ResMut<bevy_workbench::dock::TileLayoutState>,
     project: Option<Res<EditorProject>>,
 ) {
-    if !state.egui_registered {
-        contexts.add_image(EguiTextureHandle::Strong(state.render_target.clone()));
-        state.egui_registered = true;
+    // Register texture with egui (once)
+    if state.egui_texture_id.is_none() && state.render_target != Handle::default() {
+        let texture_id = contexts.add_image(EguiTextureHandle::Strong(state.render_target.clone()));
+        state.egui_texture_id = Some(texture_id);
     }
 
-    let texture_id = contexts.image_id(state.render_target.id());
+    let has_project = project.is_some();
 
-    let Ok(ctx) = contexts.ctx_mut() else { return };
+    // Sync state to the dock panel
+    if let Some(panel) = tile_state.get_panel_mut::<PreviewPanel>("flambe_preview") {
+        panel.egui_texture_id = state.egui_texture_id;
+        panel.width = state.width;
+        panel.height = state.height;
+        panel.zoom = state.zoom;
+        panel.has_project = has_project;
 
-    egui::CentralPanel::default()
-        .frame(egui::Frame::new().fill(PANEL_BG))
-        .show(ctx, |ui| {
-            // ── Toolbar ──────────────────────────────────────────
-            ui.horizontal(|ui| {
-                ui.colored_label(TEXT_SUBDUED, "Preview");
-                ui.separator();
+        if let Some(ref proj) = project {
+            panel.resolution_text = format!("{}×{}", proj.scene.width, proj.scene.height);
+        }
+    }
+}
 
-                let zoom_label = match state.zoom {
-                    PreviewZoom::Auto => "Auto".to_string(),
-                    PreviewZoom::Fixed(z) => format!("{:.0}%", z * 100.0),
-                };
+/// Preview dock panel for the Flambé editor.
+#[derive(Default)]
+pub struct PreviewPanel {
+    pub egui_texture_id: Option<egui::TextureId>,
+    pub width: u32,
+    pub height: u32,
+    pub zoom: PreviewZoom,
+    pub has_project: bool,
+    pub resolution_text: String,
+}
 
-                egui::ComboBox::from_id_salt("preview_zoom")
-                    .selected_text(&zoom_label)
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Auto, "Auto");
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Fixed(0.5), "50%");
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Fixed(0.75), "75%");
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Fixed(1.0), "100%");
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Fixed(1.25), "125%");
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Fixed(1.5), "150%");
-                        ui.selectable_value(&mut state.zoom, PreviewZoom::Fixed(2.0), "200%");
-                    });
+impl WorkbenchPanel for PreviewPanel {
+    fn id(&self) -> &str {
+        "flambe_preview"
+    }
 
-                if let Some(ref proj) = project {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.colored_label(
-                            TEXT_SUBDUED,
-                            format!("{}×{}", proj.scene.width, proj.scene.height),
-                        );
-                    });
-                }
+    fn title(&self) -> String {
+        "Preview".into()
+    }
+
+    fn ui(&mut self, ui: &mut egui::Ui) {
+        if !self.has_project {
+            ui.centered_and_justified(|ui| {
+                ui.colored_label(TEXT_SUBDUED, "No project loaded — File > Open...");
             });
+            return;
+        }
 
+        // Toolbar
+        ui.horizontal(|ui| {
+            ui.colored_label(TEXT_SUBDUED, "Preview");
             ui.separator();
 
-            // ── Preview image ────────────────────────────────────
-            let Some(tex_id) = texture_id else { return };
-
-            let avail = ui.available_size();
-            if avail.x <= 0.0 || avail.y <= 0.0 {
-                return;
-            }
-
-            let aspect = state.width as f32 / state.height.max(1) as f32;
-
-            let display_size = match state.zoom {
-                PreviewZoom::Auto => {
-                    let w = avail.x;
-                    let h = w / aspect;
-                    if h > avail.y {
-                        egui::vec2(avail.y * aspect, avail.y)
-                    } else {
-                        egui::vec2(w, h)
-                    }
-                }
-                PreviewZoom::Fixed(z) => {
-                    egui::vec2(state.width as f32 * z, state.height as f32 * z)
-                }
+            let zoom_label = match self.zoom {
+                PreviewZoom::Auto => "Auto".to_string(),
+                PreviewZoom::Fixed(z) => format!("{:.0}%", z * 100.0),
             };
 
-            // Center the image in the available space.
-            let padding = (avail - display_size).max(egui::Vec2::ZERO) * 0.5;
-
-            // For fixed zoom that overflows, use a scroll area.
-            if matches!(state.zoom, PreviewZoom::Fixed(_))
-                && (display_size.x > avail.x || display_size.y > avail.y)
-            {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    ui.image(egui::load::SizedTexture::new(tex_id, display_size));
+            egui::ComboBox::from_id_salt("preview_zoom")
+                .selected_text(&zoom_label)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Auto, "Auto");
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(0.5), "50%");
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(0.75), "75%");
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(1.0), "100%");
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(1.25), "125%");
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(1.5), "150%");
+                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(2.0), "200%");
                 });
-            } else {
-                ui.add_space(padding.y);
-                ui.vertical_centered(|ui| {
-                    ui.image(egui::load::SizedTexture::new(tex_id, display_size));
+
+            if !self.resolution_text.is_empty() {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.colored_label(TEXT_SUBDUED, &self.resolution_text);
                 });
             }
         });
+
+        ui.separator();
+
+        // Preview image
+        let Some(tex_id) = self.egui_texture_id else {
+            return;
+        };
+
+        let avail = ui.available_size();
+        if avail.x <= 0.0 || avail.y <= 0.0 {
+            return;
+        }
+
+        let aspect = self.width as f32 / self.height.max(1) as f32;
+
+        let display_size = match self.zoom {
+            PreviewZoom::Auto => {
+                let w = avail.x;
+                let h = w / aspect;
+                if h > avail.y {
+                    egui::vec2(avail.y * aspect, avail.y)
+                } else {
+                    egui::vec2(w, h)
+                }
+            }
+            PreviewZoom::Fixed(z) => egui::vec2(self.width as f32 * z, self.height as f32 * z),
+        };
+
+        let padding = (avail - display_size).max(egui::Vec2::ZERO) * 0.5;
+
+        if matches!(self.zoom, PreviewZoom::Fixed(_))
+            && (display_size.x > avail.x || display_size.y > avail.y)
+        {
+            egui::ScrollArea::both().show(ui, |ui| {
+                ui.image(egui::load::SizedTexture::new(tex_id, display_size));
+            });
+        } else {
+            ui.add_space(padding.y);
+            ui.vertical_centered(|ui| {
+                ui.image(egui::load::SizedTexture::new(tex_id, display_size));
+            });
+        }
+    }
+
+    fn closable(&self) -> bool {
+        false
+    }
 }

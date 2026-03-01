@@ -182,10 +182,7 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
                 if ui.small_button("+").clicked() {
                     state.px_per_ms = (state.px_per_ms * 1.25).min(5.0);
                 }
-                ui.colored_label(
-                    TEXT_SUBDUED,
-                    format!("{:.0}%", state.px_per_ms * 1000.0),
-                );
+                ui.colored_label(TEXT_SUBDUED, format!("{:.0}%", state.px_per_ms * 1000.0));
                 if ui.small_button("−").clicked() {
                     state.px_per_ms = (state.px_per_ms * 0.8).max(0.01);
                 }
@@ -196,8 +193,7 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
     // Thin separator below transport
     let sep_rect =
         egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
-    ui.painter()
-        .rect_filled(sep_rect, 0.0, SEPARATOR_COLOR);
+    ui.painter().rect_filled(sep_rect, 0.0, SEPARATOR_COLOR);
     ui.advance_cursor_after_rect(sep_rect);
 
     // ── Main timeline area ───────────────────────────────
@@ -231,10 +227,8 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
     );
 
     // Header: layer column
-    let header_rect = egui::Rect::from_min_size(
-        layer_rect.min,
-        egui::vec2(LAYER_COL_WIDTH, RULER_HEIGHT),
-    );
+    let header_rect =
+        egui::Rect::from_min_size(layer_rect.min, egui::vec2(LAYER_COL_WIDTH, RULER_HEIGHT));
     painter.rect_filled(header_rect, 0.0, HEADER_BG);
     painter.text(
         egui::pos2(header_rect.min.x + 8.0, header_rect.min.y + 4.0),
@@ -319,11 +313,7 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
                 let kx = timeline_rect.min.x + state.ms_to_x(kf_ms);
                 if kx >= timeline_rect.min.x && kx <= timeline_rect.max.x {
                     let cy = y + TRACK_HEIGHT / 2.0;
-                    painter.circle_filled(
-                        egui::pos2(kx, cy),
-                        KF_SIZE,
-                        KEYFRAME_COLOR,
-                    );
+                    painter.circle_filled(egui::pos2(kx, cy), KF_SIZE, KEYFRAME_COLOR);
                 }
             }
         }
@@ -424,7 +414,6 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
 
     world.insert_resource(state);
 }
-
 
 fn collect_tracks_from_layers(layers: &[bevy_alight_motion::schema::AmLayer]) -> Vec<TrackInfo> {
     use bevy_alight_motion::schema::AmLayer;
