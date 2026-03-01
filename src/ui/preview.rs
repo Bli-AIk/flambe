@@ -68,8 +68,8 @@ pub fn update_preview_resolution(
     mut images: ResMut<Assets<Image>>,
 ) {
     let Some(project) = project else { return };
-    let w = project.scene.width as u32;
-    let h = project.scene.height as u32;
+    let w = project.scene.width;
+    let h = project.scene.height;
     if w == 0 || h == 0 || (state.width == w && state.height == h) {
         return;
     }

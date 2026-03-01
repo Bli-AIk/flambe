@@ -142,16 +142,16 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
                 }
             }
             let play_label = if playing { "⏸" } else { "▶" };
-            if ui.small_button(play_label).clicked() {
-                if let Some(mut pb) = world.get_resource_mut::<AmPlayback>() {
-                    pb.toggle();
-                }
+            if ui.small_button(play_label).clicked()
+                && let Some(mut pb) = world.get_resource_mut::<AmPlayback>()
+            {
+                pb.toggle();
             }
             let loop_label = if looping { "🔁" } else { "🔂" };
-            if ui.small_button(loop_label).clicked() {
-                if let Some(mut pb) = world.get_resource_mut::<AmPlayback>() {
-                    pb.looping = !pb.looping;
-                }
+            if ui.small_button(loop_label).clicked()
+                && let Some(mut pb) = world.get_resource_mut::<AmPlayback>()
+            {
+                pb.looping = !pb.looping;
             }
 
             ui.separator();
@@ -355,19 +355,19 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
         ui.id().with("ruler_drag"),
         egui::Sense::click_and_drag(),
     );
-    if ruler_resp.dragged() || ruler_resp.clicked() {
-        if let Some(pos) = ruler_resp.interact_pointer_pos() {
-            let new_ms = state
-                .x_to_ms(pos.x - timeline_rect.min.x)
-                .clamp(0.0, total_time);
-            if let Some(mut proj) = world.get_resource_mut::<EditorProject>() {
-                proj.playhead_frame = new_ms as u32;
-            }
-            if let Some(mut pb) = world.get_resource_mut::<AmPlayback>() {
-                pb.current_time_ms = new_ms;
-            }
-            state.dragging_playhead = true;
+    if (ruler_resp.dragged() || ruler_resp.clicked())
+        && let Some(pos) = ruler_resp.interact_pointer_pos()
+    {
+        let new_ms = state
+            .x_to_ms(pos.x - timeline_rect.min.x)
+            .clamp(0.0, total_time);
+        if let Some(mut proj) = world.get_resource_mut::<EditorProject>() {
+            proj.playhead_frame = new_ms as u32;
         }
+        if let Some(mut pb) = world.get_resource_mut::<AmPlayback>() {
+            pb.current_time_ms = new_ms;
+        }
+        state.dragging_playhead = true;
     }
     if ruler_resp.drag_stopped() {
         state.dragging_playhead = false;
@@ -383,17 +383,17 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
         ui.id().with("track_area_click"),
         egui::Sense::click(),
     );
-    if track_resp.clicked() {
-        if let Some(pos) = track_resp.interact_pointer_pos() {
-            let new_ms = state
-                .x_to_ms(pos.x - timeline_rect.min.x)
-                .clamp(0.0, total_time);
-            if let Some(mut proj) = world.get_resource_mut::<EditorProject>() {
-                proj.playhead_frame = new_ms as u32;
-            }
-            if let Some(mut pb) = world.get_resource_mut::<AmPlayback>() {
-                pb.current_time_ms = new_ms;
-            }
+    if track_resp.clicked()
+        && let Some(pos) = track_resp.interact_pointer_pos()
+    {
+        let new_ms = state
+            .x_to_ms(pos.x - timeline_rect.min.x)
+            .clamp(0.0, total_time);
+        if let Some(mut proj) = world.get_resource_mut::<EditorProject>() {
+            proj.playhead_frame = new_ms as u32;
+        }
+        if let Some(mut pb) = world.get_resource_mut::<AmPlayback>() {
+            pb.current_time_ms = new_ms;
         }
     }
 

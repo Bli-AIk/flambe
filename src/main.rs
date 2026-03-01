@@ -42,7 +42,6 @@ fn main() {
                 enable_game_view: false,
                 ..default()
             },
-            ..default()
         })
         .init_resource::<TimelineState>()
         .init_resource::<MenuBarExtensions>()

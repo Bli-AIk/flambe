@@ -106,13 +106,13 @@ pub fn sync_project_loaded(
     project: Option<Res<EditorProject>>,
 ) {
     for root in roots.iter() {
-        if root.spawned {
-            if let Some(am) = projects.get(&root.handle) {
-                playback.total_time_ms = am.scene.total_time as f32;
-                playback.playing = false; // Start paused in editor
-                if let Some(ref _proj) = project {
-                    info!("AM project entities spawned, ready for editing");
-                }
+        if root.spawned
+            && let Some(am) = projects.get(&root.handle)
+        {
+            playback.total_time_ms = am.scene.total_time as f32;
+            playback.playing = false; // Start paused in editor
+            if let Some(ref _proj) = project {
+                info!("AM project entities spawned, ready for editing");
             }
         }
     }

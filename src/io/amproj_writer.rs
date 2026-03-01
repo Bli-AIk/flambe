@@ -27,7 +27,7 @@ pub fn scene_to_amproj(
     let options = FileOptions::<()>::default().compression_method(zip::CompressionMethod::Deflated);
 
     // Write project XML
-    zip.start_file("project.json", options.clone())
+    zip.start_file("project.json", options)
         .map_err(AmprojWriteError::Zip)?;
     zip.write_all(xml.as_bytes())
         .map_err(AmprojWriteError::Io)?;
@@ -35,7 +35,7 @@ pub fn scene_to_amproj(
     // Write embedded fonts
     for (name, data) in embedded_fonts {
         let path = format!("fonts/{name}");
-        zip.start_file(&path, options.clone())
+        zip.start_file(&path, options)
             .map_err(AmprojWriteError::Zip)?;
         zip.write_all(data).map_err(AmprojWriteError::Io)?;
     }
@@ -43,7 +43,7 @@ pub fn scene_to_amproj(
     // Write embedded images
     for (name, data) in embedded_images {
         let path = format!("images/{name}");
-        zip.start_file(&path, options.clone())
+        zip.start_file(&path, options)
             .map_err(AmprojWriteError::Zip)?;
         zip.write_all(data).map_err(AmprojWriteError::Io)?;
     }

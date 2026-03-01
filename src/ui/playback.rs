@@ -42,18 +42,18 @@ pub fn playback_controls_system(
 
                 // Play/Pause
                 let play_label = if playing { "⏸" } else { "▶" };
-                if ui.button(play_label).clicked() {
-                    if let Some(ref mut pb) = playback {
-                        pb.toggle();
-                    }
+                if ui.button(play_label).clicked()
+                    && let Some(ref mut pb) = playback
+                {
+                    pb.toggle();
                 }
 
                 // Loop toggle
                 let loop_label = if looping { "🔁" } else { "🔂" };
-                if ui.button(loop_label).on_hover_text("Toggle loop").clicked() {
-                    if let Some(ref mut pb) = playback {
-                        pb.looping = !pb.looping;
-                    }
+                if ui.button(loop_label).on_hover_text("Toggle loop").clicked()
+                    && let Some(ref mut pb) = playback
+                {
+                    pb.looping = !pb.looping;
                 }
 
                 // Time display
