@@ -7,6 +7,12 @@ allow_dirty = true
 dependencies_update = false
 pr_name = "chore{% if package and version %}: release {{ package }} v{{ version }}{% elif packages %}: release ({{ packages | length }} packages updated){% else %}: release{% endif %}"
 
+[[package]]
+name = "flambe"
+# Binary editor application — use GitHub releases only, not crates.io.
+publish = false
+git_release_enable = true
+
 [changelog]
 commit_parsers = [
     { message = ".*release.*", skip = true },
