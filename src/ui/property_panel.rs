@@ -1,82 +1,98 @@
-//! Property panel — shows and edits transform properties of the selected layer.
+//! Property panel — shows transform properties of the selected layer.
 
 use bevy::prelude::*;
-use bevy_inspector_egui::bevy_egui::EguiContexts;
+use bevy_workbench::dock::WorkbenchPanel;
 
 use crate::editor::EditorProject;
 
-/// System that draws the property panel for the selected layer.
-pub fn property_panel_system(
-    mut contexts: EguiContexts,
-    mut project: Option<ResMut<EditorProject>>,
-) {
-    let Ok(ctx) = contexts.ctx_mut() else { return };
+/// Property panel for bevy_workbench dock.
+pub struct PropertyPanel;
 
-    egui::SidePanel::right("property_panel")
-        .default_width(260.0)
-        .min_width(200.0)
-        .show(ctx, |ui| {
-            ui.heading("Properties");
+impl WorkbenchPanel for PropertyPanel {
+    fn id(&self) -> &str {
+        "flambe_properties"
+    }
+
+    fn title(&self) -> String {
+        "Properties".into()
+    }
+
+    fn ui(&mut self, ui: &mut egui::Ui) {
+        ui.label("Properties requires world access");
+    }
+
+    fn ui_world(&mut self, ui: &mut egui::Ui, world: &mut World) {
+        property_ui(ui, world);
+    }
+
+    fn needs_world(&self) -> bool {
+        true
+    }
+}
+
+/// Draw the property panel for the selected layer.
+fn property_ui(ui: &mut egui::Ui, world: &mut World) {
+    ui.heading("Properties");
+    ui.separator();
+
+    let project = world.get_resource::<EditorProject>();
+    let Some(project) = project else {
+        return;
+    };
+
+    let Some(idx) = project.selected_layer else {
+        ui.label("No layer selected");
+        return;
+    };
+
+    if idx >= project.scene.layers.len() {
+        ui.label("Invalid selection");
+        return;
+    }
+
+    use bevy_alight_motion::schema::AmLayer;
+    let layer = &project.scene.layers[idx];
+
+    match layer {
+        AmLayer::Shape(s) => {
+            ui.label(format!("Shape: {}", s.label));
             ui.separator();
-
-            let Some(ref mut project) = project else {
-                return;
-            };
-
-            let Some(idx) = project.selected_layer else {
-                ui.label("No layer selected");
-                return;
-            };
-
-            if idx >= project.scene.layers.len() {
-                ui.label("Invalid selection");
-                return;
-            };
-
-            use bevy_alight_motion::schema::AmLayer;
-            let layer = &project.scene.layers[idx];
-
-            match layer {
-                AmLayer::Shape(s) => {
-                    ui.label(format!("Shape: {}", s.label));
-                    ui.separator();
-                    show_transform(ui, &s.transform);
-                    ui.separator();
-                    ui.label(format!("Shape type: {}", s.shape_type));
-                    ui.label(format!("Fill: {}", s.fill_type));
-                    if !s.effects.is_empty() {
-                        ui.separator();
-                        ui.label(format!("Effects: {}", s.effects.len()));
-                        for eff in &s.effects {
-                            ui.label(format!("  • {}", eff.id));
-                        }
-                    }
-                }
-                AmLayer::Nullobj(n) => {
-                    ui.label(format!("Null Object: {}", n.label));
-                    ui.separator();
-                    show_transform(ui, &n.transform);
-                }
-                AmLayer::EmbedScene(e) => {
-                    ui.label(format!("Embed Scene: {}", e.label));
-                    ui.separator();
-                    show_transform(ui, &e.transform);
-                }
-                AmLayer::Text(t) => {
-                    ui.label(format!("Text: {}", t.label));
-                    ui.separator();
-                    show_transform(ui, &t.transform);
-                }
-                AmLayer::Image(img) => {
-                    ui.label(format!("Image: {}", img.label));
-                    ui.separator();
-                    show_transform(ui, &img.transform);
-                }
-                _ => {
-                    ui.label("(read-only layer type)");
+            show_transform(ui, &s.transform);
+            ui.separator();
+            ui.label(format!("Shape type: {}", s.shape_type));
+            ui.label(format!("Fill: {}", s.fill_type));
+            if !s.effects.is_empty() {
+                ui.separator();
+                ui.label(format!("Effects: {}", s.effects.len()));
+                for eff in &s.effects {
+                    ui.label(format!("  • {}", eff.id));
                 }
             }
-        });
+        }
+        AmLayer::Nullobj(n) => {
+            ui.label(format!("Null Object: {}", n.label));
+            ui.separator();
+            show_transform(ui, &n.transform);
+        }
+        AmLayer::EmbedScene(e) => {
+            ui.label(format!("Embed Scene: {}", e.label));
+            ui.separator();
+            show_transform(ui, &e.transform);
+        }
+        AmLayer::Text(t) => {
+            ui.label(format!("Text: {}", t.label));
+            ui.separator();
+            show_transform(ui, &t.transform);
+        }
+        AmLayer::Image(img) => {
+            ui.label(format!("Image: {}", img.label));
+            ui.separator();
+            show_transform(ui, &img.transform);
+        }
+        _ => {
+            ui.label("(read-only layer type)");
+        }
+    }
 }
 
 fn show_transform(ui: &mut egui::Ui, transform: &bevy_alight_motion::schema::AmTransform) {

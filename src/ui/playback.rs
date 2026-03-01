@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 use bevy_alight_motion::prelude::AmPlayback;
-use bevy_inspector_egui::bevy_egui::EguiContexts;
+use bevy_egui::EguiContexts;
 
 use crate::editor::EditorProject;
 

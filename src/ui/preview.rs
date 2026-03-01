@@ -5,10 +5,13 @@
 
 use bevy::camera::RenderTarget;
 use bevy::prelude::*;
-use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiTextureHandle};
+use bevy_egui::{EguiContexts, EguiTextureHandle};
+use bevy_workbench::theme::gray;
 
 use crate::editor::EditorProject;
-use crate::ui::theme;
+
+const PANEL_BG: egui::Color32 = gray::S100;
+const TEXT_SUBDUED: egui::Color32 = gray::S550;
 
 /// Zoom mode for the preview panel.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -114,11 +117,11 @@ pub fn preview_panel_system(
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
     egui::CentralPanel::default()
-        .frame(egui::Frame::new().fill(theme::PANEL_BG))
+        .frame(egui::Frame::new().fill(PANEL_BG))
         .show(ctx, |ui| {
             // ── Toolbar ──────────────────────────────────────────
             ui.horizontal(|ui| {
-                ui.colored_label(theme::TEXT_SUBDUED, "Preview");
+                ui.colored_label(TEXT_SUBDUED, "Preview");
                 ui.separator();
 
                 let zoom_label = match state.zoom {
@@ -141,7 +144,7 @@ pub fn preview_panel_system(
                 if let Some(ref proj) = project {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.colored_label(
-                            theme::TEXT_SUBDUED,
+                            TEXT_SUBDUED,
                             format!("{}×{}", proj.scene.width, proj.scene.height),
                         );
                     });
