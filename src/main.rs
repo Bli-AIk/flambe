@@ -6,7 +6,9 @@ use bevy_workbench::console::console_log_layer;
 use bevy_workbench::prelude::*;
 use flambe::io::file_loader::{TempAssets, handle_open_file, sync_project_loaded};
 use flambe::sync::sync_playback_to_editor;
-use flambe::ui::menu_bar::{OpenFileRequest, SaveFileRequest, flambe_menu_system};
+use flambe::ui::menu_bar::{
+    OpenFileRequest, SaveFileRequest, flambe_menu_action_system, flambe_menu_sync_system,
+};
 use flambe::ui::preview::{
     PreviewPanel, setup_preview, sync_preview_to_panel, update_preview_resolution,
 };
@@ -43,19 +45,21 @@ fn main() {
             ..default()
         })
         .init_resource::<TimelineState>()
+        .init_resource::<MenuBarExtensions>()
         .add_message::<OpenFileRequest>()
         .add_message::<SaveFileRequest>()
         .add_systems(Startup, setup_preview)
         .add_systems(
             bevy_egui::EguiPrimaryContextPass,
             (
-                flambe_menu_system.before(bevy_workbench::menu_bar::menu_bar_system),
+                flambe_menu_sync_system.before(bevy_workbench::menu_bar::menu_bar_system),
                 sync_preview_to_panel,
             ),
         )
         .add_systems(
             Update,
             (
+                flambe_menu_action_system,
                 handle_open_file,
                 sync_project_loaded,
                 sync_playback_to_editor,

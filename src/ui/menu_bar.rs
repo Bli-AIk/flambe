@@ -1,7 +1,7 @@
-//! Flambe-specific menu items injected into bevy_workbench menu bar.
+//! Flambe menu items integrated into bevy_workbench menu bar via extensions.
 
 use bevy::prelude::*;
-use bevy_egui::EguiContexts;
+use bevy_workbench::prelude::*;
 
 use crate::editor::EditorProject;
 
@@ -15,51 +15,55 @@ pub struct OpenFileRequest {
 #[derive(Message)]
 pub struct SaveFileRequest;
 
-/// System that adds Flambé-specific menu items to the workbench menu bar.
-/// Runs before the workbench menu_bar_system to inject into the same TopBottomPanel.
-pub fn flambe_menu_system(
-    mut contexts: EguiContexts,
+/// System that updates menu bar extensions based on project state.
+pub fn flambe_menu_sync_system(
     project: Option<Res<EditorProject>>,
+    mut extensions: ResMut<MenuBarExtensions>,
+) {
+    let has_project = project.is_some();
+
+    extensions.file_items = vec![
+        MenuExtItem {
+            id: "open",
+            label: "Open...".into(),
+            enabled: true,
+        },
+        MenuExtItem {
+            id: "save",
+            label: "Save".into(),
+            enabled: has_project,
+        },
+    ];
+
+    extensions.info_text = project.map(|proj| {
+        let dirty = if proj.dirty { " •" } else { "" };
+        format!(
+            "{}{dirty}  {}×{} @ {}fps",
+            proj.scene.title, proj.scene.width, proj.scene.height, proj.scene.fps
+        )
+    });
+}
+
+/// System that handles menu actions from the workbench menu bar.
+pub fn flambe_menu_action_system(
+    mut actions: MessageReader<MenuAction>,
     mut open_events: MessageWriter<OpenFileRequest>,
     mut save_events: MessageWriter<SaveFileRequest>,
 ) {
-    let Ok(ctx) = contexts.ctx_mut() else { return };
-
-    // Add project info to the top bar area
-    egui::TopBottomPanel::top("flambe_project_info").show(ctx, |ui| {
-        egui::MenuBar::new().ui(ui, |ui| {
-            ui.menu_button("File", |ui| {
-                if ui.button("Open...").clicked() {
-                    ui.close();
-                    if let Some(path) = rfd::FileDialog::new()
-                        .add_filter("Alight Motion Project", &["amproj"])
-                        .pick_file()
-                    {
-                        open_events.write(OpenFileRequest { path });
-                    }
-                }
-
-                let has_project = project.is_some();
-                if ui
-                    .add_enabled(has_project, egui::Button::new("Save"))
-                    .clicked()
+    for action in actions.read() {
+        match action.id {
+            "open" => {
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("Alight Motion Project", &["amproj"])
+                    .pick_file()
                 {
-                    ui.close();
-                    save_events.write(SaveFileRequest);
+                    open_events.write(OpenFileRequest { path });
                 }
-            });
-
-            // Show project info in menu bar
-            if let Some(ref proj) = project {
-                ui.separator();
-                let title = &proj.scene.title;
-                let dirty = if proj.dirty { " •" } else { "" };
-                ui.label(format!("{title}{dirty}"));
-                ui.label(format!(
-                    "{}×{} @ {}fps",
-                    proj.scene.width, proj.scene.height, proj.scene.fps
-                ));
             }
-        });
-    });
+            "save" => {
+                save_events.write(SaveFileRequest);
+            }
+            _ => {}
+        }
+    }
 }

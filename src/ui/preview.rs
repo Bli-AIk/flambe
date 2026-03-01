@@ -7,32 +7,18 @@ use bevy::camera::RenderTarget;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiTextureHandle};
 use bevy_workbench::dock::WorkbenchPanel;
+use bevy_workbench::game_view::ViewZoom;
 use bevy_workbench::theme::gray;
 
 use crate::editor::EditorProject;
 
 const TEXT_SUBDUED: egui::Color32 = gray::S550;
 
-/// Zoom mode for the preview panel.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum PreviewZoom {
-    /// Fit the image within the available panel space, preserving aspect ratio.
-    Auto,
-    /// Display at a fixed scale factor (1.0 = 100%).
-    Fixed(f32),
-}
-
-impl Default for PreviewZoom {
-    fn default() -> Self {
-        Self::Auto
-    }
-}
-
 /// Resource holding the render target and preview settings.
 #[derive(Resource)]
 pub struct PreviewState {
     pub render_target: Handle<Image>,
-    pub zoom: PreviewZoom,
+    pub zoom: ViewZoom,
     pub width: u32,
     pub height: u32,
     pub egui_texture_id: Option<egui::TextureId>,
@@ -68,7 +54,7 @@ pub fn setup_preview(mut commands: Commands, mut images: ResMut<Assets<Image>>) 
 
     commands.insert_resource(PreviewState {
         render_target,
-        zoom: PreviewZoom::Auto,
+        zoom: ViewZoom::Auto,
         width,
         height,
         egui_texture_id: None,
@@ -121,8 +107,9 @@ pub fn sync_preview_to_panel(
         panel.egui_texture_id = state.egui_texture_id;
         panel.width = state.width;
         panel.height = state.height;
-        panel.zoom = state.zoom;
         panel.has_project = has_project;
+        // Sync zoom FROM panel TO state (panel owns zoom via ComboBox)
+        state.zoom = panel.zoom;
 
         if let Some(ref proj) = project {
             panel.resolution_text = format!("{}×{}", proj.scene.width, proj.scene.height);
@@ -136,7 +123,7 @@ pub struct PreviewPanel {
     pub egui_texture_id: Option<egui::TextureId>,
     pub width: u32,
     pub height: u32,
-    pub zoom: PreviewZoom,
+    pub zoom: ViewZoom,
     pub has_project: bool,
     pub resolution_text: String,
 }
@@ -164,20 +151,20 @@ impl WorkbenchPanel for PreviewPanel {
             ui.separator();
 
             let zoom_label = match self.zoom {
-                PreviewZoom::Auto => "Auto".to_string(),
-                PreviewZoom::Fixed(z) => format!("{:.0}%", z * 100.0),
+                ViewZoom::Auto => "Auto".to_string(),
+                ViewZoom::Fixed(z) => format!("{:.0}%", z * 100.0),
             };
 
             egui::ComboBox::from_id_salt("preview_zoom")
                 .selected_text(&zoom_label)
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Auto, "Auto");
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(0.5), "50%");
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(0.75), "75%");
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(1.0), "100%");
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(1.25), "125%");
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(1.5), "150%");
-                    ui.selectable_value(&mut self.zoom, PreviewZoom::Fixed(2.0), "200%");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Auto, "Auto");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(0.5), "50%");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(0.75), "75%");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(1.0), "100%");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(1.25), "125%");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(1.5), "150%");
+                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(2.0), "200%");
                 });
 
             if !self.resolution_text.is_empty() {
@@ -202,7 +189,7 @@ impl WorkbenchPanel for PreviewPanel {
         let aspect = self.width as f32 / self.height.max(1) as f32;
 
         let display_size = match self.zoom {
-            PreviewZoom::Auto => {
+            ViewZoom::Auto => {
                 let w = avail.x;
                 let h = w / aspect;
                 if h > avail.y {
@@ -211,12 +198,12 @@ impl WorkbenchPanel for PreviewPanel {
                     egui::vec2(w, h)
                 }
             }
-            PreviewZoom::Fixed(z) => egui::vec2(self.width as f32 * z, self.height as f32 * z),
+            ViewZoom::Fixed(z) => egui::vec2(self.width as f32 * z, self.height as f32 * z),
         };
 
         let padding = (avail - display_size).max(egui::Vec2::ZERO) * 0.5;
 
-        if matches!(self.zoom, PreviewZoom::Fixed(_))
+        if matches!(self.zoom, ViewZoom::Fixed(_))
             && (display_size.x > avail.x || display_size.y > avail.y)
         {
             egui::ScrollArea::both().show(ui, |ui| {

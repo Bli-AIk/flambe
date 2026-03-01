@@ -62,3 +62,5 @@ projects/example_am_mod/
 
 # Mod repo worktree manager
 .mod-repo/screenshot_2026-02-25_02-14-54-475.png
+
+.workbench/
