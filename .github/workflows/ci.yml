@@ -21,6 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Checkout bevy_alight_motion
+        uses: actions/checkout@v6
+        with:
+          repository: Bli-AIk/bevy_alight_motion
+          path: ../bevy_alight_motion
+
+      - name: Checkout bevy_workbench
+        uses: actions/checkout@v6
+        with:
+          repository: Bli-AIk/bevy_workbench
+          path: ../bevy_workbench
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
