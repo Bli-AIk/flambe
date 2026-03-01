@@ -14,6 +14,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Checkout path dependencies
+        run: |
+          git clone --depth 1 --branch feat/group_enhance https://github.com/Bli-AIk/bevy_alight_motion.git ../bevy_alight_motion
+          git clone --depth 1 https://github.com/Bli-AIk/bevy_workbench.git ../bevy_workbench
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
