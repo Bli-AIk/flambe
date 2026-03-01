@@ -8,8 +8,8 @@ description = "PC visual editor for Alight Motion projects, powered by bevy_alig
 
 [dependencies]
 bevy = { version = "0.18", features = ["jpeg"] }
-bevy_alight_motion = { path = "../bevy_alight_motion" }
-bevy_workbench = { path = "../bevy_workbench" }
+bevy_alight_motion = { version = "0.3.1", path = "../bevy_alight_motion" }
+bevy_workbench = { version = "0.1.0", path = "../bevy_workbench" }
 bevy_egui = "0.39"
 egui = "0.33"
 quick-xml = { version = "0.39", features = ["serialize"] }

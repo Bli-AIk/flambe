@@ -19,6 +19,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - &checkout-deps
+        name: Checkout path dependencies
+        run: |
+          git clone --depth 1 --branch feat/group_enhance https://github.com/Bli-AIk/bevy_alight_motion.git ../bevy_alight_motion
+          git clone --depth 1 https://github.com/Bli-AIk/bevy_workbench.git ../bevy_workbench
+
       - &install-deps
         name: Install system dependencies
         run: |
@@ -51,6 +57,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - *checkout
+      - *checkout-deps
       - *install-deps
       - *install-rust
 
