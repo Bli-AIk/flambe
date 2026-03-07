@@ -25,10 +25,9 @@ impl Drop for TempAssets {
     fn drop(&mut self) {
         for path in &self.paths {
             if path.exists() {
-                if let Err(e) = std::fs::remove_file(path) {
-                    eprintln!("Failed to remove temp asset {:?}: {e}", path);
-                } else {
-                    eprintln!("Cleaned up temp asset {:?}", path);
+                match std::fs::remove_file(path) {
+                    Err(e) => eprintln!("Failed to remove temp asset {:?}: {e}", path),
+                    Ok(()) => eprintln!("Cleaned up temp asset {:?}", path),
                 }
             }
         }

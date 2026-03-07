@@ -17,63 +17,70 @@ pub fn playback_controls_system(
         .exact_height(32.0)
         .show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
-                let (playing, looping, current_ms, total_ms, speed) = if let Some(ref pb) = playback
-                {
-                    (
-                        pb.playing,
-                        pb.looping,
-                        pb.current_time_ms,
-                        pb.total_time_ms,
-                        pb.speed,
-                    )
-                } else {
-                    (false, false, 0.0, 1000.0, 1.0)
-                };
-
-                // Reset button
-                if ui.button("⏮").clicked() {
-                    if let Some(ref mut pb) = playback {
-                        pb.reset();
-                    }
-                    if let Some(ref mut proj) = project {
-                        proj.playhead_frame = 0;
-                    }
-                }
-
-                // Play/Pause
-                let play_label = if playing { "⏸" } else { "▶" };
-                if ui.button(play_label).clicked()
-                    && let Some(ref mut pb) = playback
-                {
-                    pb.toggle();
-                }
-
-                // Loop toggle
-                let loop_label = if looping { "🔁" } else { "🔂" };
-                if ui.button(loop_label).on_hover_text("Toggle loop").clicked()
-                    && let Some(ref mut pb) = playback
-                {
-                    pb.looping = !pb.looping;
-                }
-
-                // Time display
-                let secs = current_ms / 1000.0;
-                let total_secs = total_ms / 1000.0;
-                ui.label(format!("{secs:.2}s / {total_secs:.2}s"));
-
-                // Speed control
-                ui.separator();
-                ui.label("Speed:");
-                let mut new_speed = speed;
-                ui.add(
-                    egui::DragValue::new(&mut new_speed)
-                        .range(0.1..=4.0)
-                        .speed(0.05)
-                        .suffix("×"),
-                );
-                if let Some(ref mut pb) = playback {
-                    pb.speed = new_speed;
-                }
+                transport_controls_ui(ui, &mut playback, &mut project);
             });
         });
+}
+
+fn transport_controls_ui(
+    ui: &mut egui::Ui,
+    playback: &mut Option<ResMut<AmPlayback>>,
+    project: &mut Option<ResMut<EditorProject>>,
+) {
+    let (playing, looping, current_ms, total_ms, speed) = if let Some(pb) = playback.as_ref() {
+        (
+            pb.playing,
+            pb.looping,
+            pb.current_time_ms,
+            pb.total_time_ms,
+            pb.speed,
+        )
+    } else {
+        (false, false, 0.0, 1000.0, 1.0)
+    };
+
+    // Reset button
+    if ui.button("⏮").clicked() {
+        if let Some(pb) = playback.as_mut() {
+            pb.reset();
+        }
+        if let Some(proj) = project.as_mut() {
+            proj.playhead_frame = 0;
+        }
+    }
+
+    // Play/Pause
+    let play_label = if playing { "⏸" } else { "▶" };
+    if ui.button(play_label).clicked()
+        && let Some(pb) = playback.as_mut()
+    {
+        pb.toggle();
+    }
+
+    // Loop toggle
+    let loop_label = if looping { "🔁" } else { "🔂" };
+    if ui.button(loop_label).on_hover_text("Toggle loop").clicked()
+        && let Some(pb) = playback.as_mut()
+    {
+        pb.looping = !pb.looping;
+    }
+
+    // Time display
+    let secs = current_ms / 1000.0;
+    let total_secs = total_ms / 1000.0;
+    ui.label(format!("{secs:.2}s / {total_secs:.2}s"));
+
+    // Speed control
+    ui.separator();
+    ui.label("Speed:");
+    let mut new_speed = speed;
+    ui.add(
+        egui::DragValue::new(&mut new_speed)
+            .range(0.1..=4.0)
+            .speed(0.05)
+            .suffix("×"),
+    );
+    if let Some(pb) = playback.as_mut() {
+        pb.speed = new_speed;
+    }
 }
