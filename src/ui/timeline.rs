@@ -295,7 +295,9 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
         // Track bar
         let bar_x0 = timeline_rect.min.x + state.ms_to_x(track.start_ms);
         let bar_x1 = timeline_rect.min.x + state.ms_to_x(track.end_ms);
-        if bar_x1 > timeline_rect.min.x && bar_x0 < timeline_rect.max.x {
+        if bar_x1 <= timeline_rect.min.x || bar_x0 >= timeline_rect.max.x {
+            // bar is outside visible range, skip drawing
+        } else {
             let bar = egui::Rect::from_min_max(
                 egui::pos2(bar_x0.max(timeline_rect.min.x), y + 5.0),
                 egui::pos2(bar_x1.min(timeline_rect.max.x), y + TRACK_HEIGHT - 5.0),
@@ -306,16 +308,7 @@ fn timeline_ui(ui: &mut egui::Ui, world: &mut World) {
                 BAR_COLOR
             };
             painter.rect_filled(bar, 3.0, bar_color);
-
-            // Keyframe dots
-            for &kf_t in &track.keyframe_times {
-                let kf_ms = track.start_ms + kf_t * (track.end_ms - track.start_ms);
-                let kx = timeline_rect.min.x + state.ms_to_x(kf_ms);
-                if kx >= timeline_rect.min.x && kx <= timeline_rect.max.x {
-                    let cy = y + TRACK_HEIGHT / 2.0;
-                    painter.circle_filled(egui::pos2(kx, cy), KF_SIZE, KEYFRAME_COLOR);
-                }
-            }
+            draw_keyframes(&painter, track, &state, timeline_rect, y);
         }
 
         // Click to select layer
@@ -496,6 +489,24 @@ fn draw_ruler(
             );
         }
         ms += step_ms;
+    }
+}
+
+fn draw_keyframes(
+    painter: &egui::Painter,
+    track: &TrackInfo,
+    state: &TimelineState,
+    timeline_rect: egui::Rect,
+    y: f32,
+) {
+    let cy = y + TRACK_HEIGHT / 2.0;
+    let x_range = timeline_rect.min.x..=timeline_rect.max.x;
+    for &kf_t in &track.keyframe_times {
+        let kf_ms = track.start_ms + kf_t * (track.end_ms - track.start_ms);
+        let kx = timeline_rect.min.x + state.ms_to_x(kf_ms);
+        if x_range.contains(&kx) {
+            painter.circle_filled(egui::pos2(kx, cy), KF_SIZE, KEYFRAME_COLOR);
+        }
     }
 }
 

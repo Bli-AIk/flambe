@@ -128,6 +128,36 @@ pub struct PreviewPanel {
     pub resolution_text: String,
 }
 
+fn preview_toolbar_ui(zoom: &mut ViewZoom, resolution_text: &str, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        ui.colored_label(TEXT_SUBDUED, "Preview");
+        ui.separator();
+
+        let zoom_label = match *zoom {
+            ViewZoom::Auto => "Auto".to_string(),
+            ViewZoom::Fixed(z) => format!("{:.0}%", z * 100.0),
+        };
+
+        egui::ComboBox::from_id_salt("preview_zoom")
+            .selected_text(&zoom_label)
+            .show_ui(ui, |ui| {
+                ui.selectable_value(zoom, ViewZoom::Auto, "Auto");
+                ui.selectable_value(zoom, ViewZoom::Fixed(0.5), "50%");
+                ui.selectable_value(zoom, ViewZoom::Fixed(0.75), "75%");
+                ui.selectable_value(zoom, ViewZoom::Fixed(1.0), "100%");
+                ui.selectable_value(zoom, ViewZoom::Fixed(1.25), "125%");
+                ui.selectable_value(zoom, ViewZoom::Fixed(1.5), "150%");
+                ui.selectable_value(zoom, ViewZoom::Fixed(2.0), "200%");
+            });
+
+        if !resolution_text.is_empty() {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.colored_label(TEXT_SUBDUED, resolution_text);
+            });
+        }
+    });
+}
+
 impl WorkbenchPanel for PreviewPanel {
     fn id(&self) -> &str {
         "flambe_preview"
@@ -146,33 +176,7 @@ impl WorkbenchPanel for PreviewPanel {
         }
 
         // Toolbar
-        ui.horizontal(|ui| {
-            ui.colored_label(TEXT_SUBDUED, "Preview");
-            ui.separator();
-
-            let zoom_label = match self.zoom {
-                ViewZoom::Auto => "Auto".to_string(),
-                ViewZoom::Fixed(z) => format!("{:.0}%", z * 100.0),
-            };
-
-            egui::ComboBox::from_id_salt("preview_zoom")
-                .selected_text(&zoom_label)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Auto, "Auto");
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(0.5), "50%");
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(0.75), "75%");
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(1.0), "100%");
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(1.25), "125%");
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(1.5), "150%");
-                    ui.selectable_value(&mut self.zoom, ViewZoom::Fixed(2.0), "200%");
-                });
-
-            if !self.resolution_text.is_empty() {
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.colored_label(TEXT_SUBDUED, &self.resolution_text);
-                });
-            }
-        });
+        preview_toolbar_ui(&mut self.zoom, &self.resolution_text, ui);
 
         ui.separator();
 
