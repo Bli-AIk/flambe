@@ -131,7 +131,7 @@ mod tests {
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
-            if path.extension().is_some_and(|e| e == "amproj") {
+            if path.is_file() && path.extension().is_some_and(|e| e == "amproj") {
                 let path_str = path.to_string_lossy();
                 let xml = extract_xml_from_amproj(&path_str);
                 assert_round_trip(&xml, &path_str);
