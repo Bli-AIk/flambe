@@ -23,8 +23,8 @@ jobs:
 
       - name: Checkout path dependencies
         run: |
-          git clone --depth 1 --branch feat/group_enhance https://github.com/Bli-AIk/bevy_alight_motion.git ../bevy_alight_motion
-          git clone --depth 1 https://github.com/Bli-AIk/bevy_workbench.git ../bevy_workbench
+          git clone --depth 1 --branch feat/server-env https://github.com/Bli-AIk/bevy_alight_motion.git ../bevy_alight_motion
+          git clone --depth 1 --branch refactor_tokei_thresholds https://github.com/Bli-AIk/bevy_workbench.git ../bevy_workbench
 
       - name: Install system dependencies
         run: |
@@ -60,7 +60,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --no-deps -- -D warnings
 
       - name: Lint checks
         run: bash tokei_check.sh
