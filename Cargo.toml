@@ -10,7 +10,29 @@ description = "PC visual editor for Alight Motion projects, powered by bevy_alig
 publish = false
 
 [dependencies]
-bevy = { version = "0.18", features = ["jpeg"] }
+bevy = { version = "0.18", default-features = false, features = [
+    "bevy_asset",
+    "bevy_camera",
+    "bevy_color",
+    "bevy_core_pipeline",
+    "bevy_image",
+    "bevy_log",
+    "bevy_mesh",
+    "bevy_render",
+    "bevy_shader",
+    "bevy_sprite",
+    "bevy_sprite_render",
+    "bevy_state",
+    "bevy_text",
+    "bevy_window",
+    "bevy_winit",
+    "default_font",
+    "jpeg",
+    "multi_threaded",
+    "png",
+    "x11",
+    "wayland",
+] }
 bevy_alight_motion = { version = "0.3.1", path = "../bevy_alight_motion" }
 bevy_workbench = { version = "0.3.0", path = "../bevy_workbench" }
 bevy_egui = "0.39"
